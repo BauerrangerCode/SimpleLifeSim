@@ -1,0 +1,15 @@
+Binaries/
+Intermediate/
+Saved/*
+!Saved/Logs/
+DerivedDataCache/
+.vs/
+*.uasset
+*.umap
+*.ubulk
+*.uexp
+*.pak
+*.pdb
+*.dll
+*.exe
+*.lib

@@ -1,0 +1,58 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Edit",
+      "Write",
+      "Bash"
+    ],
+    "ask": [
+      "Bash(git push:*)",
+      "Bash(git lfs push:*)",
+      "Bash(p4 submit:*)",
+      "Bash(pip install:*)",
+      "Bash(pip3 install:*)",
+      "Bash(python -m pip install:*)",
+      "Bash(npm install:*)",
+      "Bash(npm i:*)",
+      "Bash(winget install:*)",
+      "Bash(choco install:*)",
+      "Bash(dotnet tool install:*)",
+      "Bash(rm:*)",
+      "Bash(rmdir:*)",
+      "Bash(del:*)",
+      "Bash(Remove-Item:*)"
+    ],
+    "deny": [
+      "Read(./Binaries/**)",
+      "Read(./Intermediate/**)",
+      "Read(./Saved/Autosaves/**)",
+      "Read(./Saved/Backup/**)",
+      "Read(./Saved/Collections/**)",
+      "Read(./Saved/Config/**)",
+      "Read(./Saved/Crashes/**)",
+      "Read(./Saved/ShaderDebugInfo/**)",
+      "Read(./Saved/UnrealBuildTool/**)",
+      "Read(./Saved/StagedBuilds/**)",
+      "Read(./Saved/Cooked/**)",
+      "Read(./Saved/*.png)",
+      "Read(./DerivedDataCache/**)",
+      "Read(./.vs/**)",
+      "Read(**/*.uasset)",
+      "Read(**/*.umap)",
+      "Read(**/*.ubulk)",
+      "Read(**/*.uexp)",
+      "Read(**/*.pak)",
+      "Read(**/*.pdb)",
+      "Read(**/*.dll)",
+      "Read(**/*.exe)",
+      "Read(**/*.lib)",
+      "Edit(./Binaries/**)",
+      "Edit(./Intermediate/**)",
+      "Edit(./Saved/**)",
+      "Edit(./DerivedDataCache/**)",
+      "Edit(**/*.uasset)",
+      "Edit(**/*.umap)"
+    ]
+  }
+}
