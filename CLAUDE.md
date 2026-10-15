@@ -322,7 +322,7 @@ Data flows in one direction: **Model -> ViewModel / Actors -> View**. Changes fl
 - **Location:** `Plugins/KeyCore/` (core plugin, module `KeyCore`). Holds the generic Model / Controller infrastructure of section 8. Game-specific classes do not go here.
 - **Enabled in `SimpleLifeSim.uproject`** (a project plugin is only built and loaded when enabled there).
 - **Classes (introduced by the MVVM foundation plan, `Docs/Plans/MVVMIntroduction.md`):**
-  - `UModelComponent` (Model base, replicated `UGameStateComponent`), `UModelContainer` (access to Sub-Models via `Get<T>()`).
+  - `UKeyCoreModelComponent` (Model base, replicated `UGameStateComponent`), `UModelContainer` (access to Sub-Models via `Get<T>()`).
   - `UControllerBase` (Controller base: `Initialize`, `Deinitialize`, optional `Tick`).
   - `UControllerOrchestrator` (`UTickableWorldSubsystem`, authority only, owns and runs the Controllers).
   - `UControllerSettings` (`UDeveloperSettings`, ordered Controller class list).

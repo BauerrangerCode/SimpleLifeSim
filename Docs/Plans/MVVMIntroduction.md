@@ -11,7 +11,7 @@ This plan builds the **read path** (Controller -> Model -> replication -> ViewMo
 |---|---|---|
 | D1 | Order-of-operations macro | **Separate plan afterwards** (CLAUDE.md 9.1 step 3). This plan only provides the *interim order* = order of the controller list. |
 | D2 | Controller host | Orchestrator = `UTickableWorldSubsystem` (needed for central tick). Controllers = plain `UObject`s created and owned by it. "Server only" is decided in `OnWorldBeginPlay` by checking that an authority GameMode exists (not via NetMode in `ShouldCreateSubsystem`, which is unreliable on clients). On clients the subsystem exists but does nothing and does not tick. |
-| D3 | Model structure | Sub-Models are **`UGameStateComponent`** subclasses (ModularGameplay) on the GameState. `UModelComponent` calls `SetIsReplicatedByDefault(true)` and implements `GetLifetimeReplicatedProps` explicitly. |
+| D3 | Model structure | Sub-Models are **`UGameStateComponent`** subclasses (ModularGameplay) on the GameState. `UKeyCoreModelComponent` calls `SetIsReplicatedByDefault(true)` and implements `GetLifetimeReplicatedProps` explicitly. |
 | D4 | Registration of Sub-Models | In the GameState constructor via `CreateDefaultSubobject`. Game module lists models; plugins only provide classes. |
 | D5 | Local behavior (animation, particles, sound) | Pure **View**. Reads replicated state; one-shot effects via **GAS GameplayCues**. Orchestrator is server-only. No client-side controllers. |
 | D6 | Per-player data | **Not decided here.** Architecture must not hard-code player count or per-player layout. |
@@ -40,7 +40,7 @@ This plan builds the **read path** (Controller -> Model -> replication -> ViewMo
 ## Delegate / mechanism justification (CLAUDE.md 7.5)
 | Mechanism | Where | Justification |
 |---|---|---|
-| FieldNotify (`INotifyFieldValueChanged`) | `UModelComponent`, ViewModels | Engine mechanism of the MVVM plugin; View bindings are built on it. Explicitly allowed by CLAUDE.md 7.5. |
+| FieldNotify (`INotifyFieldValueChanged`) | `UKeyCoreModelComponent`, ViewModels | Engine mechanism of the MVVM plugin; View bindings are built on it. Explicitly allowed by CLAUDE.md 7.5. |
 | `OnRep_...` functions | Model components, GameState | Replication callbacks are functions, allowed by CLAUDE.md 7.5. They trigger the FieldNotify broadcast on clients. |
 | Central tick | Orchestrator (`UTickableWorldSubsystem`) | One tick on the server instead of one per controller; order is deterministic (list order) and visible in one call stack. Disabled on clients. Controller tick is opt-in. |
 | Model-ready registration | GameState -> one explicit function call | No delegate; engine `OnRep_ReplicatedHasBegunPlay` override. |
@@ -80,7 +80,7 @@ None. Engine-source verifications to do *inside* the steps (not design questions
 - Step 4: `OnWorldBeginPlay` runs after the GameState exists (spawn in `AGameModeBase`, `World.cpp` calls subsystems before `GameMode->StartPlay()`, confirmed by reading; full call order re-checked when implementing); authority detection via GameMode; init-failure policy = stop all controllers, fail loudly.
 - Step 5: visibility/overridability of `OnRep_ReplicatedHasBegunPlay` and `HandleBeginPlay`.
 - Step 6: exact `UMVVMViewModelContextResolver` virtuals (`CreateInstance`, `DestroyInstance` confirmed to exist); whether the MCP toolset can create and bind a Widget Blueprint (else fallback D24).
-- Step 3: how `UModelComponent` implements `INotifyFieldValueChanged` and the UE_MVVM macros on a non-ViewModel class.
+- Step 3: how `UKeyCoreModelComponent` implements `INotifyFieldValueChanged` and the UE_MVVM macros on a non-ViewModel class.
 
 ## Design
 Layers and classes (generic classes in core plugin `KeyCore`; Time slice in the game module):
@@ -89,7 +89,7 @@ Layers and classes (generic classes in core plugin `KeyCore`; Time slice in the 
 |---|---|---|
 | `AGameStateBase` subclass (game module) | Model host | Creates Sub-Model components and `UModelContainer`, `GetModel()`, overrides the HasBegunPlay path for the model-ready registration |
 | `UModelContainer` : `UObject` (core) | Model access | Non-replicated; `Get<T>()` with cache; holds no data |
-| `UModelComponent` : `UGameStateComponent` (core) | Model | Base: replication setup, FieldNotify support, SaveGame convention, controller-only mutators (convention) |
+| `UKeyCoreModelComponent` : `UGameStateComponent` (core) | Model | Base: replication setup, FieldNotify support, SaveGame convention, controller-only mutators (convention) |
 | `UTimeModelComponent` (slice) | Model | Replicated `MinuteOfDay` |
 | `UControllerBase` : `UObject` (core) | Controller | `Initialize(Context)`, `Deinitialize`, optional `Tick`, model access via context, no own state |
 | `UControllerOrchestrator` : `UTickableWorldSubsystem` (core) | Controller | Authority only. Creates/owns/inits/ticks/deinits controllers from settings; validates dependency order |
@@ -108,7 +108,7 @@ Networking: Model replicated via component replication; Orchestrator and Control
 Each step builds before it is committed (CLAUDE.md 4.4); each step creates its log category together with its classes.
 1. Enable plugins (D25); create `KeyCore` plugin skeleton and module (`.uplugin` + Build.cs dependencies per D16); build.
 2. Update CLAUDE.md (D15 wording, `KeyCore` as core plugin, dependency direction, controller/model class names introduced here). Show the diff to the user.
-3. `UModelComponent` (replication + FieldNotify) and `UModelContainer`; build + Spec.
+3. `UKeyCoreModelComponent` (replication + FieldNotify) and `UModelContainer`; build + Spec.
 4. `UControllerBase`, `UControllerSettings`, `UControllerOrchestrator` (authority check, init/tick/deinit, dependency-order validation, error handling); build + Spec.
 5. Project GameState subclass: Sub-Model registration, `GetModel()`, HasBegunPlay-based model-ready registration. Switch all four GameModes to it (D19). Build; start each variant map once to check it still loads.
 6. Time slice: `UTimeModelComponent`, `UTimeSettings`, `UTimeController` (+ dependency interface if needed), `UTimeViewModel`, `UTimeViewModelResolver`, widget (D24).
