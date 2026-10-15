@@ -11,8 +11,9 @@
 /**
  * Test-only Sub-Model with one FieldNotify value, used by the KeyCore automation specs.
  * UHT forbids guarding UCLASS with preprocessor blocks, so this class is compiled in every configuration.
+ * HideDropdown keeps it out of component pickers in the editor.
  */
-UCLASS()
+UCLASS(HideDropdown)
 class UKeyCoreTestModelComponent : public UKeyCoreModelComponent
 {
 	GENERATED_BODY()

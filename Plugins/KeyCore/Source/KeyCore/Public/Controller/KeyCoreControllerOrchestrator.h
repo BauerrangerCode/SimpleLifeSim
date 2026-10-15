@@ -34,7 +34,7 @@ public:
 	const TArray<TObjectPtr<UControllerBase>>& GetControllers() const;
 
 	/**
-	 * Checks that every dependency of the listed Controller classes is listed before its dependent. Reads only the class defaults,
+	 * Checks that every entry is a concrete Controller class listed once, and that every dependency is listed before its dependent. Reads only the class defaults,
 	 * so nothing is spawned. Returns an empty string if the order is valid, otherwise the first problem found.
 	 */
 	static FString ValidateDependencyOrder(const TArray<TSubclassOf<UControllerBase>>& ControllerClasses);
@@ -46,6 +46,12 @@ public:
 	bool InitializeControllers(UModelContainer* Model, const TArray<TSubclassOf<UControllerBase>>& ControllerClasses);
 
 private:
+	/** Checks one settings entry on its own: it must be set, concrete, and listed only once. Returns the problem or an empty string. */
+	static FString ValidateControllerEntry(const TArray<TSubclassOf<UControllerBase>>& ControllerClasses, int32 Index);
+
+	/** Checks that every dependency of one entry is set, listed, not the entry itself, and listed before it. Returns the problem or an empty string. */
+	static FString ValidateDependenciesOfEntry(const TArray<TSubclassOf<UControllerBase>>& ControllerClasses, int32 Index);
+
 	/** Delivers every dependency of Controller from the already initialized Controllers. Validation guarantees they exist. */
 	void DeliverDependencies(UControllerBase& Controller);
 

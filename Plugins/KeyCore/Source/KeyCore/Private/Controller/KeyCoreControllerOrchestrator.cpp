@@ -79,28 +79,72 @@ FString UControllerOrchestrator::ValidateDependencyOrder(const TArray<TSubclassO
 {
 	for (int32 Index = 0; Index < ControllerClasses.Num(); ++Index)
 	{
-		if (!ControllerClasses[Index])
+		FString Error = ValidateControllerEntry(ControllerClasses, Index);
+		if (Error.IsEmpty())
 		{
-			return FString::Printf(TEXT("UControllerSettings contains an empty Controller entry at index %d."), Index);
+			Error = ValidateDependenciesOfEntry(ControllerClasses, Index);
 		}
 
-		const UControllerBase* Defaults = ControllerClasses[Index]->GetDefaultObject<UControllerBase>();
-		for (const TSubclassOf<UControllerBase>& DependencyClass : Defaults->GetDependencies())
+		if (!Error.IsEmpty())
 		{
-			const int32 ProviderIndex = ControllerClasses.IndexOfByPredicate([&DependencyClass](const TSubclassOf<UControllerBase>& Listed)
-			{
-				return Listed && Listed->IsChildOf(DependencyClass.Get());
-			});
+			return Error;
+		}
+	}
 
-			if (ProviderIndex == INDEX_NONE)
-			{
-				return FString::Printf(TEXT("'%s' depends on '%s', which is missing from UControllerSettings.Controllers."), *ControllerClasses[Index]->GetName(), *DependencyClass->GetName());
-			}
+	return FString();
+}
 
-			if (ProviderIndex > Index)
-			{
-				return FString::Printf(TEXT("'%s' depends on '%s', which is listed after it. Move '%s' before it in UControllerSettings.Controllers."), *ControllerClasses[Index]->GetName(), *DependencyClass->GetName(), *DependencyClass->GetName());
-			}
+FString UControllerOrchestrator::ValidateControllerEntry(const TArray<TSubclassOf<UControllerBase>>& ControllerClasses, const int32 Index)
+{
+	const TSubclassOf<UControllerBase>& ControllerClass = ControllerClasses[Index];
+	if (!ControllerClass)
+	{
+		return FString::Printf(TEXT("UControllerSettings contains an empty Controller entry at index %d."), Index);
+	}
+
+	if (ControllerClass->HasAnyClassFlags(CLASS_Abstract))
+	{
+		return FString::Printf(TEXT("'%s' at index %d is abstract and cannot be created. List a concrete Controller class instead."), *ControllerClass->GetName(), Index);
+	}
+
+	const int32 FirstIndex = ControllerClasses.IndexOfByKey(ControllerClass);
+	if (FirstIndex != Index)
+	{
+		return FString::Printf(TEXT("'%s' is listed twice in UControllerSettings.Controllers (index %d and %d). Every Controller exists once."), *ControllerClass->GetName(), FirstIndex, Index);
+	}
+
+	return FString();
+}
+
+FString UControllerOrchestrator::ValidateDependenciesOfEntry(const TArray<TSubclassOf<UControllerBase>>& ControllerClasses, const int32 Index)
+{
+	const UClass* ControllerClass = ControllerClasses[Index];
+	const UControllerBase* Defaults = ControllerClass->GetDefaultObject<UControllerBase>();
+	for (const TSubclassOf<UControllerBase>& DependencyClass : Defaults->GetDependencies())
+	{
+		if (!DependencyClass)
+		{
+			return FString::Printf(TEXT("'%s' returns an empty class from GetDependencies()."), *ControllerClass->GetName());
+		}
+
+		const int32 ProviderIndex = ControllerClasses.IndexOfByPredicate([&DependencyClass](const TSubclassOf<UControllerBase>& Listed)
+		{
+			return Listed && Listed->IsChildOf(DependencyClass.Get());
+		});
+
+		if (ProviderIndex == INDEX_NONE)
+		{
+			return FString::Printf(TEXT("'%s' depends on '%s', which is missing from UControllerSettings.Controllers."), *ControllerClass->GetName(), *DependencyClass->GetName());
+		}
+
+		if (ProviderIndex == Index)
+		{
+			return FString::Printf(TEXT("'%s' depends on itself through '%s'. A Controller cannot be its own dependency."), *ControllerClass->GetName(), *DependencyClass->GetName());
+		}
+
+		if (ProviderIndex > Index)
+		{
+			return FString::Printf(TEXT("'%s' depends on '%s', which is listed after it. Move '%s' before it in UControllerSettings.Controllers."), *ControllerClass->GetName(), *DependencyClass->GetName(), *DependencyClass->GetName());
 		}
 	}
 
