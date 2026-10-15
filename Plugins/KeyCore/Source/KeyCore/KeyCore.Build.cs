@@ -11,6 +11,7 @@ public class KeyCore : ModuleRules
 		PublicDependencyModuleNames.AddRange(new string[] {
 			"Core",
 			"CoreUObject",
+			"DeveloperSettings",
 			"Engine",
 			"FieldNotification",
 			"ModelViewViewModel",
