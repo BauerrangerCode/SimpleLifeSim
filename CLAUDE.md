@@ -7,8 +7,8 @@ If an instruction here conflicts with a request in chat, ask before acting.
 
 ## 1. Project Overview
 
-- **Engine:** Unreal Engine 5.8.3, source build (`F:\UnrealEngine\UnrealEngine-release`).
-- **Project root:** `F:\UnrealEngine\UnrealEngine-release\SimpleLifeSim`
+- **Engine:** Unreal Engine 5.8.3, source build; the engine root is the parent folder of the project root (`..`).
+- **Project root:** the repository root (the folder that contains `SimpleLifeSim.uproject`). All paths in project files and docs are relative to it.
 - **Game module:** `SimpleLifeSim` (Runtime). Targets: `SimpleLifeSim`, `SimpleLifeSimEditor`.
 - **Enabled plugins (from .uproject):** StateTree, GameplayStateTree, ModelingToolsEditorMode, ModelContextProtocol (Experimental), AllToolsets.
 - **Goal:** A fully playable RPG for **one or two players (co-op multiplayer)** with:
@@ -107,7 +107,7 @@ Configured in `.claude/settings.json`:
 Rules:
 - Work in small steps. After each step, report briefly what was done and the result (including warnings and errors), so the user can review single steps.
 - Never run destructive commands without explicit approval for that specific command.
-- **Never modify engine code** (`F:\UnrealEngine\UnrealEngine-release\Engine`). The engine is read-only reference material.
+- **Never modify engine code** (`..\Engine`). The engine is read-only reference material.
 
 ---
 
@@ -393,9 +393,9 @@ Source and Content are organized **by feature**, e.g. `Characters/`, `Combat/`, 
 
 ## 11. Build and Verification
 
-Build the editor target (Windows):
+Build the editor target (Windows, run from the project root in `cmd`):
 ```
-"F:\UnrealEngine\UnrealEngine-release\Engine\Build\BatchFiles\Build.bat" SimpleLifeSimEditor Win64 Development -Project="F:\UnrealEngine\UnrealEngine-release\SimpleLifeSim\SimpleLifeSim.uproject" -WaitMutex
+..\Engine\Build\BatchFiles\Build.bat SimpleLifeSimEditor Win64 Development -Project="%CD%\SimpleLifeSim.uproject" -WaitMutex
 ```
 
 - Claude can only run builds when it runs natively on Windows (Claude Code started in this folder on the user's PC). In a Linux shell it cannot compile; then the user builds and pastes the output.

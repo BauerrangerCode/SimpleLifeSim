@@ -1,7 +1,6 @@
 # Plan: MVC / MVVM Foundation (Epic E02)
 
-Status: APPROVED by the user on 2026-10-15 (revised after review). Target location after approval: `Docs/Plans/MVVMIntroduction.md`.
-
+Status: APPROVED by the user on 2026-10-15 (revised after review).
 ## Goal
 A robust, debuggable foundation for all later systems: replicated game data (Model) on the GameState, small server-side logic units (Controllers) run by one Orchestrator, and a UI path (ViewModel/View) that only reads the Model. Data is separated from logic and presentation.
 
