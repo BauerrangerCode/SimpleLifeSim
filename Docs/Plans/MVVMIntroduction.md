@@ -115,6 +115,14 @@ Each step builds before it is committed (CLAUDE.md 4.4); each step creates its l
 7. Console command (Model state + controller order).
 8. 2-player PIE verification (dedicated server + 2 clients + late join); review against guidelines; todo-report; update plan with final state.
 
+### Review fixes after steps 3 and 4 (approved by the user on 2026-10-15)
+No design change; fixes within the scope of steps 3 and 4.
+- `UKeyCoreModelComponent` constructor exported (`KEYCORE_API`), so Sub-Models in the game module link.
+- Dependency-order validation also rejects self-dependencies, empty dependency classes, abstract classes and duplicate entries; each case has a spec.
+- Test classes are `HideDropdown`, so they do not appear in the Controller picker. They stay in the runtime module (a separate test module was not chosen).
+- Start-up errors of the Orchestrator are logged and ensured through one function; `InitializeControllers` refuses a second call.
+- `FControllerContext` is a `USTRUCT` with a `UPROPERTY` `TObjectPtr`; missing doc comments added; spec literals use `TEXT()`.
+
 ## Verification
 Build output; Automation Specs; manual PIE (dedicated server + 2 clients, plus late-join client; check replication rate of `MinuteOfDay` with the console command or net stats); each variant map starts; review against guidelines; todo-report.
 
