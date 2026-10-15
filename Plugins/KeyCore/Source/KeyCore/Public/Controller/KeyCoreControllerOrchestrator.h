@@ -41,7 +41,7 @@ public:
 
 	/**
 	 * Creates and initializes the given Controller classes in list order and delivers their dependencies.
-	 * Returns false after logging and ensuring the cause if the order is invalid. Nothing is initialized in that case.
+	 * Returns false after logging and ensuring the cause if the order is invalid or Controllers already run. Nothing is initialized in that case.
 	 */
 	bool InitializeControllers(UModelContainer* Model, const TArray<TSubclassOf<UControllerBase>>& ControllerClasses);
 
@@ -55,8 +55,13 @@ private:
 	/** Delivers every dependency of Controller from the already initialized Controllers. Validation guarantees they exist. */
 	void DeliverDependencies(UControllerBase& Controller);
 
+	/** Deinitializes in reverse initialization order, so no Controller outlives a dependency it still uses. */
 	void DeinitializeControllers();
 
+	/** Logs and ensures a start-up error. Logged too, because an ensure fires only once per call site and session. */
+	static void ReportInitializationError(const FString& Message);
+
+	/** Owned Controllers in initialization order. UPROPERTY, so the garbage collector keeps them alive. */
 	UPROPERTY()
 	TArray<TObjectPtr<UControllerBase>> Controllers;
 

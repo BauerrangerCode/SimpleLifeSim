@@ -24,16 +24,18 @@ void UControllerOrchestrator::OnWorldBeginPlay(UWorld& InWorld)
 	for (const TSoftClassPtr<UControllerBase>& SoftControllerClass : GetDefault<UControllerSettings>()->Controllers)
 	{
 		UClass* ControllerClass = SoftControllerClass.LoadSynchronous();
-		if (!ensureMsgf(ControllerClass, TEXT("UControllerSettings lists a Controller that cannot be loaded: '%s'."), *SoftControllerClass.ToString()))
+		if (!ControllerClass)
 		{
+			ReportInitializationError(FString::Printf(TEXT("UControllerSettings lists a Controller that cannot be loaded: '%s'."), *SoftControllerClass.ToString()));
 			return;
 		}
 		ControllerClasses.Add(ControllerClass);
 	}
 
 	IKeyCoreModelProvider* ModelProvider = Cast<IKeyCoreModelProvider>(InWorld.GetGameState());
-	if (!ensureMsgf(ModelProvider, TEXT("The GameState does not implement IKeyCoreModelProvider, so Controllers cannot start.")))
+	if (!ModelProvider)
 	{
+		ReportInitializationError(TEXT("The GameState does not implement IKeyCoreModelProvider, so Controllers cannot start."));
 		return;
 	}
 
@@ -153,16 +155,22 @@ FString UControllerOrchestrator::ValidateDependenciesOfEntry(const TArray<TSubcl
 
 bool UControllerOrchestrator::InitializeControllers(UModelContainer* Model, const TArray<TSubclassOf<UControllerBase>>& ControllerClasses)
 {
-	if (!ensureMsgf(Model, TEXT("Controllers need a Model, but none was given.")))
+	if (!Model)
 	{
+		ReportInitializationError(TEXT("Controllers need a Model, but none was given."));
+		return false;
+	}
+
+	if (!Controllers.IsEmpty())
+	{
+		ReportInitializationError(TEXT("Controllers are already initialized. InitializeControllers runs once per world."));
 		return false;
 	}
 
 	const FString ValidationError = ValidateDependencyOrder(ControllerClasses);
 	if (!ValidationError.IsEmpty())
 	{
-		UE_LOG(LogKeyCoreController, Error, TEXT("%s"), *ValidationError);
-		ensureMsgf(false, TEXT("%s"), *ValidationError);
+		ReportInitializationError(ValidationError);
 		return false;
 	}
 
@@ -205,4 +213,10 @@ void UControllerOrchestrator::DeinitializeControllers()
 		Controllers[Index]->Deinitialize();
 	}
 	Controllers.Reset();
+}
+
+void UControllerOrchestrator::ReportInitializationError(const FString& Message)
+{
+	UE_LOG(LogKeyCoreController, Error, TEXT("%s"), *Message);
+	ensureMsgf(false, TEXT("%s"), *Message);
 }

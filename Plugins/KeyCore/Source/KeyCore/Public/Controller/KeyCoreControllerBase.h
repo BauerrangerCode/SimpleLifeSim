@@ -9,10 +9,14 @@
 class UModelContainer;
 
 /** Input that the ControllerOrchestrator passes to every Controller on initialization. */
+USTRUCT()
 struct FControllerContext
 {
+	GENERATED_BODY()
+
 	/** Model of the GameState. Controllers write to it and never keep game state of their own. */
-	UModelContainer* Model = nullptr;
+	UPROPERTY()
+	TObjectPtr<UModelContainer> Model;
 };
 
 /**
@@ -43,9 +47,10 @@ public:
 	/** Receives an initialized dependency. Typed access goes through an interface the dependency implements, never a hard cast. */
 	virtual void ReceiveDependency(UControllerBase* Dependency);
 
-	/** Model read access for the View layer and tests. Writes still happen only inside Controllers. */
+	/** Model this Controller writes to. Public so that automation specs can check the injected Model; Views never hold Controllers. */
 	UModelContainer* GetModel() const;
 
+	/** Asked by the Orchestrator every frame, so only Controllers that opted in with bCanTick are ticked. */
 	bool CanTick() const;
 
 protected:
