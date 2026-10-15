@@ -30,7 +30,8 @@ public:
 	};
 
 public:
-	UKeyCoreModelComponent(const FObjectInitializer& ObjectInitializer);
+	/** Exported, because every Sub-Model in the game module calls it through Super. */
+	KEYCORE_API UKeyCoreModelComponent(const FObjectInitializer& ObjectInitializer);
 
 	//~ Begin INotifyFieldValueChanged Interface
 	KEYCORE_API virtual FDelegateHandle AddFieldValueChangedDelegate(UE::FieldNotification::FFieldId InFieldId, FFieldValueChangedDelegate InNewDelegate) override final;

@@ -8,6 +8,7 @@
 
 class UModelContainer;
 
+/** Reflection stub of IKeyCoreModelProvider. NotBlueprintable, because the Model is set up in C++ on the GameState. */
 UINTERFACE(MinimalAPI, NotBlueprintable)
 class UKeyCoreModelProvider : public UInterface
 {
