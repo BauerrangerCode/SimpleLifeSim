@@ -31,5 +31,6 @@ void UTimeModelComponent::SetMinuteOfDay(int32 NewMinuteOfDay)
 
 void UTimeModelComponent::OnRep_MinuteOfDay()
 {
+	UE_LOG(LogSimpleLifeSimTime, Verbose, TEXT("MinuteOfDay replicated to a client: %d."), MinuteOfDay);
 	UE_MVVM_BROADCAST_FIELD_VALUE_CHANGED(MinuteOfDay);
 }

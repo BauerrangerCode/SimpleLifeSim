@@ -29,6 +29,7 @@ void UTimeController::Tick(float DeltaSeconds)
 	const int32 CurrentMinuteOfDay = CalculateMinuteOfDay(GameState->GetServerWorldTimeSeconds(), Settings->StartMinuteOfDay, Settings->InGameMinutesPerRealSecond);
 	if (CurrentMinuteOfDay != TimeModel->GetMinuteOfDay())
 	{
+		UE_LOG(LogSimpleLifeSimTime, Verbose, TEXT("Minute of day written on the server: %d."), CurrentMinuteOfDay);
 		TimeModel->SetMinuteOfDay(CurrentMinuteOfDay);
 	}
 }
