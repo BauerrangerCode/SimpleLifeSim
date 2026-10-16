@@ -18,7 +18,8 @@ public class SimpleLifeSim : ModuleRules
 			"StateTreeModule",
 			"GameplayStateTreeModule",
 			"UMG",
-			"Slate"
+			"Slate",
+			"KeyCore"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });
