@@ -2,7 +2,7 @@
 
 #include "Misc/AutomationTest.h"
 
-#if WITH_DEV_AUTOMATION_TESTS
+#if WITH_DEV_AUTOMATION_TESTS && WITH_EDITORONLY_DATA
 
 #include "GameFramework/Actor.h"
 #include "Model/ModelContainer.h"

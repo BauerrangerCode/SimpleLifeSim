@@ -7,9 +7,11 @@
 #include "KeyCoreTestControllers.generated.h"
 
 /*
- * Test-only Controllers. They are compiled in every configuration, because UHT does not allow UCLASS inside preprocessor blocks.
+ * Test-only Controllers. They exist only where editor-only data is compiled (WITH_EDITORONLY_DATA), so they are absent
+ * from dedicated-server and shipping builds. UHT accepts UCLASS inside this one guard, but not inside other guards.
  * HideDropdown keeps them out of the Controller picker in Project Settings.
  */
+#if WITH_EDITORONLY_DATA
 
 /** Test-only Controller without dependencies. */
 UCLASS(HideDropdown)
@@ -65,3 +67,5 @@ public:
 		return { TSubclassOf<UControllerBase>() };
 	}
 };
+
+#endif // WITH_EDITORONLY_DATA

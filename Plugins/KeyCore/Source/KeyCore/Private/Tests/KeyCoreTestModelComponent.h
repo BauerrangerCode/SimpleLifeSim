@@ -8,9 +8,11 @@
 
 #include "KeyCoreTestModelComponent.generated.h"
 
+#if WITH_EDITORONLY_DATA
+
 /**
  * Test-only Sub-Model with one FieldNotify value, used by the KeyCore automation specs.
- * UHT forbids guarding UCLASS with preprocessor blocks, so this class is compiled in every configuration.
+ * It exists only where editor-only data is compiled (WITH_EDITORONLY_DATA), so it is absent from dedicated-server and shipping builds.
  * HideDropdown keeps it out of component pickers in the editor.
  */
 UCLASS(HideDropdown)
@@ -29,3 +31,5 @@ public:
 	UPROPERTY(BlueprintReadOnly, FieldNotify, Category = "KeyCore|Test")
 	int32 TestValue = 0;
 };
+
+#endif // WITH_EDITORONLY_DATA
