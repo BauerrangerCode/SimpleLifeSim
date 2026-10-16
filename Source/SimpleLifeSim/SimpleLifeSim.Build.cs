@@ -19,7 +19,9 @@ public class SimpleLifeSim : ModuleRules
 			"GameplayStateTreeModule",
 			"UMG",
 			"Slate",
-			"KeyCore"
+			"KeyCore",
+			"ModelViewViewModel",
+			"DeveloperSettings"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] { });
