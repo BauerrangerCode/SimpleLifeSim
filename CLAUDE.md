@@ -234,7 +234,7 @@ Actors are used where a connection to the game world is required (e.g. enemy/NPC
 | Layer | Contains | Responsibilities | Must NOT |
 |---|---|---|---|
 | **Model** | All game-relevant data: inventory, health, experience, quests, world state, NPC locations, completed dialogues, time of day, ... | Holds data. Only trivial validation and read access. Server-authoritative and replicated where clients need it. Persistable (SaveGame). | Contain game rules; know about Controllers, ViewModels, widgets or actors |
-| **Controller** | Many small, domain-specific controllers (e.g. Enemy, Time, Dialogue controller), GAS abilities | The **only** layer that writes to the Model. Runs on the server for replicated state. Initialization and tick order between controllers is declared with the order-of-operations macro (9.1). | Hold game state of its own; know about widgets; be monolithic |
+| **Controller** | Many small, domain-specific controllers (e.g. Enemy, Time, Dialogue controller), GAS abilities | The **only** layer that writes to the Model. Runs on the server for replicated state. Initialization and tick order between controllers is declared with the order-of-operations macro (Epic E03 on GitHub). | Hold game state of its own; know about widgets; be monolithic |
 | **ViewModel** | Classes derived from `UMVVMViewModelBase` | Converts Model data into displayable UI state; forwards user actions to Controllers | Write the Model directly; contain game rules; be replicated; reference widgets |
 | **View** | UMG widgets; world presentation actors (characters, NPCs, enemies, spawners, interactables) | Displays state; forwards input/events to Controllers (world) or ViewModel (UI) | Contain game rules; hold authoritative game state |
 
@@ -328,60 +328,16 @@ Data flows in one direction: **Model -> ViewModel / Actors -> View**. Changes fl
   - `UControllerSettings` (`UDeveloperSettings`, ordered Controller class list).
 - **Log category:** one per system, added with the classes that need it (plan step 3/4).
 
-### 9.1 Planned Foundational Work (in this order)
+### 9.1 Backlog
 
-Work is tracked in GitHub Issues / GitHub Projects (section 13).
+Epics and Stories (including the planned foundational work, e.g. `E03 - Order of Operations`) are tracked only in GitHub Issues / GitHub Projects (section 13.1). This file holds rules and decisions, not backlog items.
 
-1. **Epic: Unreal Setup** - Claude setup, Git/GitHub, local build scripts, server target, MCP connection between Claude and the Unreal Editor.
-2. **Epic: MVC / MVVM** - Model / Controller / MVVM introduction - the first code in the project. Requires a plan (`Docs/Plans/MVVMIntroduction.md`) and approval.
-3. **Order-of-operations system** - a macro to declare dependencies and execution order.
-   - Scope: **initialization order and tick order** of Controllers.
-   - Validation: **at compile time**. Cycles and impossible orders abort the build with a **readable compiler message**.
-   - Technical constraints (C++20 `static_assert` only accepts literal messages, interaction with Unreal tick groups and subsystem initialization) are worked out in its plan.
+### 9.2 Game Design Document (GDD)
 
-
-### 9.2 TODO: Game Design Document (GDD)
-
-**Status:** planned, not started. **Blocked:** the GitHub repository `BauerrangerCode/SimpleLifeSim` does not exist yet. Once it is created and the Claude GitHub app has access, Claude sets up the GDD there.
-
-**Decided:**
-- Format: Markdown files in the repository under `Docs/GDD/` (free, readable/writable by Claude, reachable online and on mobile via GitHub without the user's PC).
-- Images in `Docs/GDD/images/`, tracked via **Git LFS** (already covered by the existing `*.png` / `*.jpg` rules in `.gitattributes`).
+- Format: Markdown files in the repository under `Docs/GDD/` (free, readable/writable by Claude, reachable online and on mobile via GitHub without the user's PC). `Docs/GDD/README.md` is the overview with the table of contents and the status per chapter.
+- Images in `Docs/GDD/images/`, tracked via **Git LFS**.
 - Diagrams (flows, state machines, boss phases) preferably as Mermaid in Markdown.
 - Content is never invented: known decisions are filled in, everything else gets `//TODO claude:` markers.
-
-**Planned structure:**
-```
-Docs/GDD/
-  README.md              # overview, table of contents, status per chapter
-  01_Vision.md           # pitch, target audience, pillars, genre, references
-  02_CoreLoop.md         # gameplay loop, progression
-  03_Combat/
-    README.md            # shared systems (GAS, stats, damage, targeting)
-    Melee.md
-    Ranged.md
-    Magic.md
-  04_Survival.md         # hunger, temperature - explicitly NO stamina
-  05_Crafting.md
-  06_Building.md
-  07_Characters.md       # 15 story characters
-  08_Enemies.md          # enemy types, AI (StateTree)
-  09_Bosses.md           # 5 bosses with multiple phases
-  10_Story_Quests.md
-  11_World_Levels.md
-  12_UI_UX.md
-  13_Multiplayer.md      # co-op up to 2 players (online + split-screen)
-  14_Audio_Art.md
-  images/                # Git LFS
-```
-
-**Steps (once the repository exists):**
-- [ ] User creates the private repository `BauerrangerCode/SimpleLifeSim` and grants the Claude GitHub app access.
-- [ ] Inspect the repository (existing `.gitattributes`, `Docs/`).
-- [ ] Create branch `gdd/initial-skeleton`.
-- [ ] Create all GDD files with a common template; fill in known decisions, mark open points with `//TODO claude:`.
-- [ ] Check that all image formats used in `Docs/GDD/images/` are covered by LFS rules in `.gitattributes` (e.g. `*.gif`, `*.webp` are not yet).
-- [ ] Commit (`#GDD, Setup, Claude Code: Initial GDD skeleton with combat sub-chapters, survival, crafting and building`) and push the branch (push requires confirmation). The user decides on merging.
 
 ---
 
