@@ -18,8 +18,9 @@ void UTimeController::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
+	const UWorld* World = GetWorld();
+	const AGameStateBase* GameState = World ? World->GetGameState() : nullptr;
 	UTimeModelComponent* TimeModel = GetModel()->Get<UTimeModelComponent>();
-	AGameStateBase* GameState = GetWorld()->GetGameState();
 	if (!ensureMsgf(TimeModel && GameState, TEXT("TimeController needs the time Model and a GameState.")))
 	{
 		return;

@@ -7,6 +7,12 @@
 
 #define LOCTEXT_NAMESPACE "TimeViewModel"
 
+namespace
+{
+	/** Hours and minutes are shown with two digits, so 8 o'clock reads as 08:00. */
+	constexpr int32 DigitsPerTimeField = 2;
+}
+
 void UTimeViewModel::BindModel(UTimeModelComponent* InTimeModel)
 {
 	TimeModel = InTimeModel;
@@ -36,7 +42,7 @@ void UTimeViewModel::UpdateDayTimeText()
 	const int32 Minutes = Model->GetMinuteOfDay() % UTimeModelComponent::MinutesPerHour;
 
 	FNumberFormattingOptions TwoDigits;
-	TwoDigits.MinimumIntegralDigits = 2;
+	TwoDigits.MinimumIntegralDigits = DigitsPerTimeField;
 	UE_MVVM_SET_PROPERTY_VALUE(DayTimeText, FText::Format(LOCTEXT("DayTime", "{0}:{1}"), FText::AsNumber(Hours, &TwoDigits), FText::AsNumber(Minutes, &TwoDigits)));
 }
 
