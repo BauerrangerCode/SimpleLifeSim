@@ -10,6 +10,7 @@
 #include "Model/KeyCoreModelProvider.h"
 #include "Model/ModelContainer.h"
 
+//TODO claude: Decide whether Controllers start here (before the GameState's HandleBeginPlay) or at the model-ready point in SimpleLifeSimGameState. The engine order is confirmed in UWorld::BeginPlay.
 void UControllerOrchestrator::OnWorldBeginPlay(UWorld& InWorld)
 {
 	Super::OnWorldBeginPlay(InWorld);
