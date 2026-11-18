@@ -20,9 +20,14 @@ class KEYCORE_API UControllerOrchestrator : public UTickableWorldSubsystem
 
 public:
 	//~ Begin UWorldSubsystem Interface
-	virtual void OnWorldBeginPlay(UWorld& InWorld) override;
 	virtual void Deinitialize() override;
 	//~ End UWorldSubsystem Interface
+
+	/**
+	 * Starts the Controllers on the authority. The GameState calls it once its Model is ready (MVVM plan, D23), so every Controller
+	 * finds the Model in place. Does nothing on clients and in worlds without a GameMode.
+	 */
+	void StartControllers();
 
 	//~ Begin FTickableGameObject Interface
 	virtual bool IsTickable() const override;

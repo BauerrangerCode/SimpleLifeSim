@@ -2,6 +2,8 @@
 
 #include "GameState/SimpleLifeSimGameState.h"
 
+#include "Controller/KeyCoreControllerOrchestrator.h"
+#include "Engine/World.h"
 #include "Model/ModelContainer.h"
 #include "Time/TimeModelComponent.h"
 
@@ -35,4 +37,12 @@ void ASimpleLifeSimGameState::OnRep_ReplicatedHasBegunPlay()
 void ASimpleLifeSimGameState::RegisterModelReady()
 {
 	UE_LOG(LogSimpleLifeSimGameState, Log, TEXT("Model of '%s' is ready on %s."), *GetName(), HasAuthority() ? TEXT("the server") : TEXT("a client"));
+
+	if (HasAuthority())
+	{
+		if (UControllerOrchestrator* Orchestrator = GetWorld()->GetSubsystem<UControllerOrchestrator>())
+		{
+			Orchestrator->StartControllers();
+		}
+	}
 }

@@ -128,17 +128,21 @@ Deviations from the approved design, made during implementation:
 - Model base class is `UKeyCoreModelComponent`, because the engine already has `UModelComponent` (BSP models). The header is `KeyCoreModelComponent.h`, because UHT requires unique header names.
 - Test-only classes and specs are compiled only where `WITH_EDITORONLY_DATA` is set. UHT accepts `UCLASS` inside that guard. The guard is 0 on dedicated-server builds.
 - Dependency-order validation is a static function over the class defaults (`ValidateDependencyOrder`). It runs before any Controller is created, so the spec tests it without `ensure`, because automation counts each `ensure` call site once per session.
-- `UControllerOrchestrator` starts the Controllers in `OnWorldBeginPlay`. The engine calls that before `GameMode->StartPlay()` and before the GameState's `HandleBeginPlay`. Open question: whether the Controller start should move to the model-ready point.
+- `UControllerOrchestrator` starts the Controllers at the model-ready point. The GameState's `RegisterModelReady` calls `StartControllers()` on the server. The earlier start in `OnWorldBeginPlay` ran before the GameState's `HandleBeginPlay`, so the Model was not yet confirmed ready. This was decided by the user.
 - The time slice lives in the game module (`Source/SimpleLifeSim/Time/`). `UTimeController` ticks, and `TimeController` is listed in `Config/DefaultGame.ini`.
-- The widget Blueprint is not created yet (D24 fallback). The C++ base is `UTimeWidget`. The MCP `unreal` connection was unavailable.
-- Default speed is 1 in-game minute per real second (`UTimeSettings`). That is one in-game day in 24 real minutes and a replication about once per second. The design value is still open.
+- The time widget (`WBP_Time`) is built in the editor. Its `DayTimeTextBlock.Text` binds One Way to `TimeViewModel.DayTimeText`. The Blueprint creates it in `BP_ThirdPersonPlayerController` at BeginPlay, with Self as owning player. The C++ base is `UTimeWidget`. The MCP `unreal` connection was unavailable during the build and is back later.
+- Default speed is 1 in-game minute per real second (`UTimeSettings`). That is one in-game day in 24 real minutes. The user confirmed this speed.
+- Open, marked in code with `//TODO claude:`: the ViewModel lifetime under load. It is checked once at least 15 widgets run at the same time.
+- Open, decided by the user to stay open until after E03: the two-player PIE in the editor (including late join and the widget display). This must be tested after E03.
 
 Verification results:
-- Editor target builds without warnings (last build after step 8 log changes: `Result: Succeeded`).
+- Editor target builds without warnings (last build after the model-ready change: `Result: Succeeded`).
 - Automation Specs pass: `KeyCore` (Model, Controller, orchestrator order) and `SimpleLifeSim.Time` (minute calculation).
 - Each variant map starts once headless (`Lvl_ThirdPerson`, `Lvl_Combat`, `Lvl_Platforming`, `Lvl_SideScrolling`), and the model-ready line appears on the server.
 - Headless two-client run (dedicated server, client 1 at 25 s, late client 2 at 70 s): both clients receive the minute, the late client starts at the current minute, the server writes once per in-game minute, and the logs show no errors. Values match across machines within about one step, matched by timestamp.
-- Not verified: the time widget display (no Blueprint yet), the editor PIE with two players, and the review-against-guidelines pass.
+- Editor PIE with one player: the Controller starts, the time advances from 480 to 486 in seven seconds (checked through the editor's log tools).
+- Review against the guidelines: done on 2026-11-18. Findings fixed: named digit constant in `TimeViewModel.cpp`, world check in `TimeController::Tick`. Template code with `GetAllActorsOfClass` (Variant_*) is out of scope and will be replaced step by step.
+- Not verified: the editor PIE with two players (open until after E03).
 
 ## Verification
 Build output; Automation Specs; manual PIE (dedicated server + 2 clients, plus late-join client; check replication rate of `MinuteOfDay` with the console command or net stats); each variant map starts; review against guidelines; todo-report.

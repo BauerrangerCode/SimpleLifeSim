@@ -10,13 +10,12 @@
 #include "Model/KeyCoreModelProvider.h"
 #include "Model/ModelContainer.h"
 
-//TODO claude: Decide whether Controllers start here (before the GameState's HandleBeginPlay) or at the model-ready point in SimpleLifeSimGameState. The engine order is confirmed in UWorld::BeginPlay.
-void UControllerOrchestrator::OnWorldBeginPlay(UWorld& InWorld)
+void UControllerOrchestrator::StartControllers()
 {
-	Super::OnWorldBeginPlay(InWorld);
+	UWorld* World = GetWorld();
 
 	// Only the authority has a GameMode. Clients also have this subsystem, which stays inactive for them.
-	if (!InWorld.GetAuthGameMode())
+	if (!World || !World->GetAuthGameMode())
 	{
 		return;
 	}
@@ -33,7 +32,7 @@ void UControllerOrchestrator::OnWorldBeginPlay(UWorld& InWorld)
 		ControllerClasses.Add(ControllerClass);
 	}
 
-	IKeyCoreModelProvider* ModelProvider = Cast<IKeyCoreModelProvider>(InWorld.GetGameState());
+	IKeyCoreModelProvider* ModelProvider = Cast<IKeyCoreModelProvider>(World->GetGameState());
 	if (!ModelProvider)
 	{
 		ReportInitializationError(TEXT("The GameState does not implement IKeyCoreModelProvider, so Controllers cannot start."));
