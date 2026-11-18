@@ -5,10 +5,11 @@
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/PlayerStart.h"
 #include "Engine/World.h"
+#include "GameState/SimpleLifeSimGameState.h"
 
 APlatformingGameMode::APlatformingGameMode()
 {
-	// stub
+	GameStateClass = ASimpleLifeSimGameState::StaticClass();
 }
 
 void APlatformingGameMode::BeginPlay()

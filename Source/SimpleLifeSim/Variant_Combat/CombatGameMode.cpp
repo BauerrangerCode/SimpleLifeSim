@@ -5,10 +5,11 @@
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/PlayerStart.h"
 #include "Engine/World.h"
+#include "GameState/SimpleLifeSimGameState.h"
 
 ACombatGameMode::ACombatGameMode()
 {
-	// stub
+	GameStateClass = ASimpleLifeSimGameState::StaticClass();
 }
 
 void ACombatGameMode::BeginPlay()

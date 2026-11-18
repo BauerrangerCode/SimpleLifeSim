@@ -68,3 +68,6 @@ Content/Art/
 
 # Personal per-developer content
 Content/Developers/
+
+# Local MCP connection to the running editor (machine-specific)
+.mcp.json

@@ -7,10 +7,10 @@ If an instruction here conflicts with a request in chat, ask before acting.
 
 ## 1. Project Overview
 
-- **Engine:** Unreal Engine 5.8.3, source build (`F:\UnrealEngine\UnrealEngine-release`).
-- **Project root:** `F:\UnrealEngine\UnrealEngine-release\SimpleLifeSim`
+- **Engine:** Unreal Engine 5.8.3, source build; the engine root is the parent folder of the project root (`..`).
+- **Project root:** the repository root (the folder that contains `SimpleLifeSim.uproject`). All paths in project files and docs are relative to it.
 - **Game module:** `SimpleLifeSim` (Runtime). Targets: `SimpleLifeSim`, `SimpleLifeSimEditor`.
-- **Enabled plugins (from .uproject):** StateTree, GameplayStateTree, ModelingToolsEditorMode, ModelContextProtocol (Experimental), AllToolsets.
+- **Enabled plugins (from .uproject):** StateTree, GameplayStateTree, ModelingToolsEditorMode, ModelContextProtocol (Experimental), AllToolsets, ModelViewViewModel (Beta), ModularGameplay, KeyCore (project plugin, see 9.0).
 - **Goal:** A fully playable RPG for **one or two players (co-op multiplayer)** with:
   - playable character(s),
   - fifteen story characters that drive the narrative,
@@ -107,7 +107,7 @@ Configured in `.claude/settings.json`:
 Rules:
 - Work in small steps. After each step, report briefly what was done and the result (including warnings and errors), so the user can review single steps.
 - Never run destructive commands without explicit approval for that specific command.
-- **Never modify engine code** (`F:\UnrealEngine\UnrealEngine-release\Engine`). The engine is read-only reference material.
+- **Never modify engine code** (`..\Engine`). The engine is read-only reference material.
 
 ---
 
@@ -204,9 +204,10 @@ Player-facing text is always `FText` (localizable), never `FString` literals.
   - Every delegate in our own code needs a short justification in the plan (e.g. "button press: UMG is designed around `OnClicked`").
 - **Blueprints:** logic lives in C++. Blueprints are thin subclasses for assets, tuning, and visual scripting only where the plan says so.
 
-### 7.6 Networking (Multiplayer, up to 2 players)
+### 7.6 Networking (Multiplayer, co-op)
 
-- **Mode:** co-op for up to two players, offered as **two game modes that share the same code path**:
+- **Player count:** the architecture does not hard-code the number of players (D15 in the MVVM plan). Two players is the tested and designed case.
+- **Mode:** co-op, offered as **two game modes that share the same code path**:
   - **Online:** players connect to a dedicated server.
   - **Local split-screen:** the game starts a **local dedicated server in the background**, and both local players connect to it.
   - Consequence: there is exactly one network architecture (client / dedicated server). Gameplay code never has a separate "offline" path. A `Server` build target is required.
@@ -312,6 +313,20 @@ Data flows in one direction: **Model -> ViewModel / Actors -> View**. Changes fl
 - **Paradigm:** Model / Controller / Presentation with MVVM for the UI (section 8).
 
 - **Dependency direction:** the game module depends on plugins, **never the other way round**. Dependencies between plugins are clarified per feature in its plan.
+  - Layering: Engine / Epic plugins -> `KeyCore` (core) -> feature plugins (Dialogue, Combat, Quest, UI) -> game module `SimpleLifeSim`.
+  - `KeyCore` depends only on Epic plugins (`ModularGameplay`, `ModelViewViewModel`, `FieldNotification`). It never depends on a feature plugin or on the game module.
+  - Feature plugins may depend on `KeyCore` but not on each other unless their plan says so.
+
+### 9.0 Core Framework `KeyCore`
+
+- **Location:** `Plugins/KeyCore/` (core plugin, module `KeyCore`). Holds the generic Model / Controller infrastructure of section 8. Game-specific classes do not go here.
+- **Enabled in `SimpleLifeSim.uproject`** (a project plugin is only built and loaded when enabled there).
+- **Classes (introduced by the MVVM foundation plan, `Docs/Plans/MVVMIntroduction.md`):**
+  - `UKeyCoreModelComponent` (Model base, replicated `UGameStateComponent`), `UModelContainer` (access to Sub-Models via `Get<T>()`).
+  - `UControllerBase` (Controller base: `Initialize`, `Deinitialize`, optional `Tick`).
+  - `UControllerOrchestrator` (`UTickableWorldSubsystem`, authority only, owns and runs the Controllers).
+  - `UControllerSettings` (`UDeveloperSettings`, ordered Controller class list).
+- **Log category:** one per system, added with the classes that need it (plan step 3/4).
 
 ### 9.1 Planned Foundational Work (in this order)
 
@@ -383,7 +398,7 @@ SimpleLifeSim/
   Content/                   # binary assets (.uasset/.umap) - not readable as text
   Docs/GDD/                  # Game Design Document (Markdown, images via LFS) - see 9.2
   Docs/Plans/                # one plan file per feature
-  Plugins/                   # generic feature plugins (Dialogue, Combat, Quest, UI)
+  Plugins/                   # KeyCore (core framework, see 9.0); generic feature plugins (Dialogue, Combat, Quest, UI)
   Source/SimpleLifeSim/      # game module
 ```
 
@@ -393,9 +408,9 @@ Source and Content are organized **by feature**, e.g. `Characters/`, `Combat/`, 
 
 ## 11. Build and Verification
 
-Build the editor target (Windows):
+Build the editor target (Windows, run from the project root in `cmd`):
 ```
-"F:\UnrealEngine\UnrealEngine-release\Engine\Build\BatchFiles\Build.bat" SimpleLifeSimEditor Win64 Development -Project="F:\UnrealEngine\UnrealEngine-release\SimpleLifeSim\SimpleLifeSim.uproject" -WaitMutex
+..\Engine\Build\BatchFiles\Build.bat SimpleLifeSimEditor Win64 Development -Project="%CD%\SimpleLifeSim.uproject" -WaitMutex
 ```
 
 - Claude can only run builds when it runs natively on Windows (Claude Code started in this folder on the user's PC). In a Linux shell it cannot compile; then the user builds and pastes the output.

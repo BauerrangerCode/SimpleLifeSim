@@ -20,7 +20,7 @@ Goal: Claude and the development environment are fully set up, so feature work c
 - **Status:** Proposed
 - **Description:** Install Claude Code on Windows and start it in the project folder, so Claude can build, test and use Git directly.
 - **Acceptance criteria:**
-  - [ ] Claude Code runs in `F:\UnrealEngine\UnrealEngine-release\SimpleLifeSim`.
+  - [ ] Claude Code runs in the project root (the folder containing `SimpleLifeSim.uproject`).
   - [ ] `CLAUDE.md` is loaded at session start.
   - [ ] Project skills (`create-plan`, `review-against-guidelines`, `commit-message`, `todo-report`) are available.
   - [ ] `/permissions` shows the allow / ask / deny rules from `.claude/settings.json`, and a read of a denied path (e.g. a `.uasset`) is blocked.

@@ -2,7 +2,9 @@
 
 #include "SimpleLifeSimGameMode.h"
 
+#include "GameState/SimpleLifeSimGameState.h"
+
 ASimpleLifeSimGameMode::ASimpleLifeSimGameMode()
 {
-	// stub
+	GameStateClass = ASimpleLifeSimGameState::StaticClass();
 }
