@@ -27,10 +27,7 @@ class UKeyCoreTestControllerB : public UControllerBase
 	GENERATED_BODY()
 
 public:
-	virtual TArray<TSubclassOf<UControllerBase>> GetDependencies() const override
-	{
-		return { UKeyCoreTestControllerA::StaticClass() };
-	}
+	KEYCORE_CONTROLLER_ORDER(TDependsOn<UKeyCoreTestControllerA>)
 
 	virtual void ReceiveDependency(UControllerBase* Dependency) override
 	{

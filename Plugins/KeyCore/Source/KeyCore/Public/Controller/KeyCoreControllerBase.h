@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "Controller/KeyCoreControllerOrder.h"
 #include "UObject/Object.h"
 
 #include "KeyCoreControllerBase.generated.h"
@@ -29,6 +30,9 @@ class KEYCORE_API UControllerBase : public UObject
 	GENERATED_BODY()
 
 public:
+	/** Order relations of a Controller without KEYCORE_CONTROLLER_ORDER: none. Subclasses replace it through the macro. */
+	using FControllerOrderDeclaration = TControllerOrderDeclaration<>;
+
 	/**
 	 * Called once on the authority. The dependencies from GetDependencies() were delivered through ReceiveDependency before this call.
 	 * Overrides must call Super first.
@@ -41,7 +45,7 @@ public:
 	/** Called every frame, only if the Controller opted in with bCanTick. Most Controllers stay event-driven (CLAUDE.md 7.5). */
 	virtual void Tick(float DeltaSeconds);
 
-	/** Controllers this one needs. The Orchestrator checks that each of them is initialized before this Controller. */
+	/** Controllers this one needs (DependsOn). Implemented only by KEYCORE_CONTROLLER_ORDER, never by hand, so it matches the declaration. */
 	virtual TArray<TSubclassOf<UControllerBase>> GetDependencies() const;
 
 	/** Receives an initialized dependency. Typed access goes through an interface the dependency implements, never a hard cast. */
