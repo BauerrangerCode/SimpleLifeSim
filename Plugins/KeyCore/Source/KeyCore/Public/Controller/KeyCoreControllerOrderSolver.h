@@ -184,33 +184,7 @@ struct TControllerOrderSolver
 	static constexpr bool Validate()
 	{
 		constexpr FControllerOrderProblem Problem = Solve().Problem;
-		if constexpr (Problem.Kind == EControllerOrderProblem::NotAController)
-		{
-			(void)sizeof(TControllerOrderErrorNotAController<TControllerAt<Problem.ControllerIndex>>);
-		}
-		else if constexpr (Problem.Kind == EControllerOrderProblem::ListedTwice)
-		{
-			(void)sizeof(TControllerOrderErrorListedTwice<TControllerAt<Problem.ControllerIndex>>);
-		}
-		else if constexpr (Problem.Kind == EControllerOrderProblem::RelationToSelf)
-		{
-			(void)sizeof(TControllerOrderErrorRelationToSelf<TControllerAt<Problem.ControllerIndex>>);
-		}
-		else if constexpr (Problem.Kind == EControllerOrderProblem::RelationToUnlisted)
-		{
-			using FController = TControllerAt<Problem.ControllerIndex>;
-			using FTarget = typename TDeclarationAt<Problem.ControllerIndex>::template TRelationAt<Problem.RelationIndex>::FTarget;
-			(void)sizeof(TControllerOrderErrorRelationToUnlisted<FController, FTarget>);
-		}
-		else if constexpr (Problem.Kind == EControllerOrderProblem::InitOrderCycle)
-		{
-			(void)sizeof(TControllerOrderErrorInitOrderCycle<TControllerAt<Problem.ControllerIndex>>);
-		}
-		else if constexpr (Problem.Kind == EControllerOrderProblem::TickOrderCycle)
-		{
-			(void)sizeof(TControllerOrderErrorTickOrderCycle<TControllerAt<Problem.ControllerIndex>>);
-		}
-		return Problem.Kind == EControllerOrderProblem::None;
+		return TProblemReport<Problem.Kind, Problem.ControllerIndex, Problem.RelationIndex>::bIsValid;
 	}
 
 	/** Turns the compiled order into runtime data. Fails the build if the declarations are broken. */
@@ -241,6 +215,53 @@ private:
 
 	template <int32 Index>
 	using TDeclarationAt = typename KeyCore::Private::TControllerDeclarationOf<TControllerAt<Index>>::Type;
+
+	/*
+	 * Picks the error template of one problem kind. Only the matching specialization is instantiated, so the other kinds never
+	 * touch invalid indices. (if constexpr in Validate() was tried first: MSVC still evaluated alias templates in discarded branches.)
+	 */
+	template <EControllerOrderProblem Kind, int32 ControllerIndex, int32 RelationIndex>
+	struct TProblemReport
+	{
+		static constexpr bool bIsValid = true;
+	};
+
+	template <int32 ControllerIndex, int32 RelationIndex>
+	struct TProblemReport<EControllerOrderProblem::NotAController, ControllerIndex, RelationIndex> : TControllerOrderErrorNotAController<TControllerAt<ControllerIndex>>
+	{
+		static constexpr bool bIsValid = false;
+	};
+
+	template <int32 ControllerIndex, int32 RelationIndex>
+	struct TProblemReport<EControllerOrderProblem::ListedTwice, ControllerIndex, RelationIndex> : TControllerOrderErrorListedTwice<TControllerAt<ControllerIndex>>
+	{
+		static constexpr bool bIsValid = false;
+	};
+
+	template <int32 ControllerIndex, int32 RelationIndex>
+	struct TProblemReport<EControllerOrderProblem::RelationToSelf, ControllerIndex, RelationIndex> : TControllerOrderErrorRelationToSelf<TControllerAt<ControllerIndex>>
+	{
+		static constexpr bool bIsValid = false;
+	};
+
+	template <int32 ControllerIndex, int32 RelationIndex>
+	struct TProblemReport<EControllerOrderProblem::RelationToUnlisted, ControllerIndex, RelationIndex>
+		: TControllerOrderErrorRelationToUnlisted<TControllerAt<ControllerIndex>, typename TDeclarationAt<ControllerIndex>::template TRelationAt<RelationIndex>::FTarget>
+	{
+		static constexpr bool bIsValid = false;
+	};
+
+	template <int32 ControllerIndex, int32 RelationIndex>
+	struct TProblemReport<EControllerOrderProblem::InitOrderCycle, ControllerIndex, RelationIndex> : TControllerOrderErrorInitOrderCycle<TControllerAt<ControllerIndex>>
+	{
+		static constexpr bool bIsValid = false;
+	};
+
+	template <int32 ControllerIndex, int32 RelationIndex>
+	struct TProblemReport<EControllerOrderProblem::TickOrderCycle, ControllerIndex, RelationIndex> : TControllerOrderErrorTickOrderCycle<TControllerAt<ControllerIndex>>
+	{
+		static constexpr bool bIsValid = false;
+	};
 
 	/** Checks the list itself: every entry is a Controller and listed once. */
 	static constexpr FControllerOrderProblem FindListProblem()

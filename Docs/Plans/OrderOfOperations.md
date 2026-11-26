@@ -118,6 +118,34 @@ Each step builds before it is committed (CLAUDE.md 4.4); each step reports warni
 6. `KeyCore.PrintState` shows init order, tick order and disabled Controllers. Update CLAUDE.md 9.0 (classes) and the `UControllerSettings` doc comment. Build.
 7. Story E03-S05: two-player PIE (dedicated server + 2 clients, late join, widget placeholder), review against guidelines, todo-report, update this plan with the final state.
 
+## Progress Notes
+### Step 1 (2026-11-26)
+- UHT accepts `KEYCORE_CONTROLLER_ORDER` in a `UCLASS` body (checked with `UKeyCoreTestControllerB`, whose hand-written `GetDependencies()` the macro replaced; the existing specs still pass).
+- Deviation: the generic part is split into two headers. `KeyCoreControllerOrder.h` (tags, declaration, macro) is light and included by `KeyCoreControllerBase.h`; `KeyCoreControllerOrderSolver.h` (solver, error templates, `FControllerOrder`, `KEYCORE_DEFINE_CONTROLLER_ORDER`) needs the complete `UControllerBase` and is only included where the central list is defined.
+- The solver uses plain fixed-size arrays inside `constexpr` structs; `TStaticArray` was not needed.
+- `static_assert(sizeof(FResult) > 0)` in the solver avoids MSVC warning C4686 for the first use of a result type in a constant expression.
+
+### Step 2: manual negative build (2026-11-26)
+Two broken lists were added temporarily to `KeyCoreControllerOrderStaticTests.cpp` and reverted afterwards.
+
+The first run showed that MSVC instantiates alias templates inside discarded `if constexpr` branches, which produced follow-up errors (`TNthTypeFromParameterPack<-1>`). The error dispatch was changed to partial specializations (`TProblemReport`), so only the matching error template is instantiated.
+
+Init cycle, `KEYCORE_DEFINE_CONTROLLER_ORDER(GetBrokenCycleOrder, FCycleFirst, FCycleSecond)` (MSVC output, German compiler locale, shortened paths):
+```
+KeyCoreControllerOrderSolver.h(97,61): error C2338: static_assert failed: 'KeyCore controller order: the DependsOn / RunsAfter declarations form a cycle. The template argument of TControllerOrderErrorInitOrderCycle is part of the cycle.'
+KeyCoreControllerOrderSolver.h(255,99): note: Siehe Verweis auf die gerade kompilierte Klasse Vorlage-Instanziierung "TControllerOrderErrorInitOrderCycle<KeyCoreControllerOrderStaticTests::FCycleFirst>".
+KeyCoreControllerOrderSolver.h(193,25): error C2338: static_assert failed: 'KeyCore controller order is invalid. The error above names the class.'
+```
+
+Relation to an unlisted class, `KEYCORE_DEFINE_CONTROLLER_ORDER(GetBrokenUnlistedOrder, FControllerB)`:
+```
+KeyCoreControllerOrderSolver.h(90,61): error C2338: static_assert failed: 'KeyCore controller order: a Controller declares a relation to a class that is missing from KEYCORE_DEFINE_CONTROLLER_ORDER. The template arguments of TControllerOrderErrorRelationToUnlisted are the Controller and the missing class.'
+KeyCoreControllerOrderSolver.h(249,5): note: Siehe Verweis auf die gerade kompilierte Klasse Vorlage-Instanziierung "TControllerOrderErrorRelationToUnlisted<KeyCoreControllerOrderStaticTests::FControllerB,KeyCoreControllerOrderStaticTests::FControllerA>".
+KeyCoreControllerOrderSolver.h(193,25): error C2338: static_assert failed: 'KeyCore controller order is invalid. The error above names the class.'
+```
+
+Observation: with both broken lists in one file, MSVC reported only the first. This does not matter in practice, because there is exactly one central list (O1). The class names appear in the "note" line right after the message, not in the error line itself (risk from the plan confirmed, acceptable).
+
 ## Verification
 | Criterion | Check |
 |---|---|
