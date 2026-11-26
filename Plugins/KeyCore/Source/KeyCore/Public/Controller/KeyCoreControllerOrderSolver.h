@@ -6,6 +6,8 @@
 #include "Controller/KeyCoreControllerOrder.h"
 #include "Templates/UnrealTypeTraits.h"
 
+#include <type_traits>
+
 /**
  * Compile-time solver for the Controller order (Docs/Plans/OrderOfOperations.md, O1 to O6).
  * The game module includes every Controller header and lists all Controllers once with KEYCORE_DEFINE_CONTROLLER_ORDER.
@@ -108,7 +110,7 @@ struct TControllerOrderErrorTickOrderCycle
 namespace KeyCore::Private
 {
 	/** Declaration of a listed type. Types that are no Controller get the empty declaration, so the solver reports them once instead of failing on a missing alias. */
-	template <typename ControllerType, bool bIsController = TIsDerivedFrom<ControllerType, UControllerBase>::Value>
+	template <typename ControllerType, bool bIsController = std::is_base_of_v<UControllerBase, ControllerType>>
 	struct TControllerDeclarationOf
 	{
 		using Type = TControllerOrderDeclaration<>;
@@ -119,6 +121,23 @@ namespace KeyCore::Private
 	{
 		using Type = typename ControllerType::FControllerOrderDeclaration;
 	};
+
+	/**
+	 * Class of a listed type, or null for a type that is no Controller. Such a type already failed the build with its own message;
+	 * the guard keeps a second, misleading "StaticClass is not a member" error out of the output.
+	 */
+	template <typename ControllerType>
+	TSubclassOf<UControllerBase> GetControllerClass()
+	{
+		if constexpr (std::is_base_of_v<UControllerBase, ControllerType>)
+		{
+			return ControllerType::StaticClass();
+		}
+		else
+		{
+			return nullptr;
+		}
+	}
 
 	/** "Must come before" relation between list positions: Before[A][B] means A runs before B. */
 	template <int32 Capacity>
@@ -193,7 +212,7 @@ struct TControllerOrderSolver
 		static_assert(Validate(), "KeyCore controller order is invalid. The error above names the class.");
 
 		constexpr FResult Result = Solve();
-		const TSubclassOf<UControllerBase> ListedClasses[] = { ControllerTypes::StaticClass()..., nullptr };
+		const TSubclassOf<UControllerBase> ListedClasses[] = { KeyCore::Private::GetControllerClass<ControllerTypes>()..., nullptr };
 
 		int32 InitPositionOfListIndex[Capacity] = {};
 		FControllerOrder Order;
@@ -266,7 +285,7 @@ private:
 	/** Checks the list itself: every entry is a Controller and listed once. */
 	static constexpr FControllerOrderProblem FindListProblem()
 	{
-		constexpr bool IsController[] = { TIsDerivedFrom<ControllerTypes, UControllerBase>::Value..., true };
+		constexpr bool IsController[] = { std::is_base_of_v<UControllerBase, ControllerTypes>..., true };
 		constexpr int32 FirstIndex[] = { KeyCore::Private::FindTypeIndex<ControllerTypes, ControllerTypes...>()..., INDEX_NONE };
 
 		for (int32 Index = 0; Index < Count; ++Index)

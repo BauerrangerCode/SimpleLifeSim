@@ -114,7 +114,7 @@ Each step builds before it is committed (CLAUDE.md 4.4); each step reports warni
 2. Manual negative build: add a real cycle, build, record the compiler output in this plan, revert. (No commit of the cycle.)
 3. Orchestrator: `StartControllers(const FControllerOrder&)`, tick order, unlisted-class check (O9), disabled filtering and O7 check; remove `ValidateDependencyOrder` and its specs; new Automation Specs for order building, Orchestrator order and disabled handling. Build + specs.
 4. Settings: replace `Controllers` with `DisabledControllers`, editor warning, remove the `DefaultGame.ini` entry. Build.
-5. Game module: central list with `UTimeController`, `UTimeController` uses the macro, GameState passes the order. Build; start each variant map once headless and check that the Controller starts.
+5. Game module: central list with `UTimeController` (function declared in a game module header, macro comment updated), `UTimeController` uses the macro, GameState passes the order. Build; start each variant map once headless and check that the Controller starts.
 6. `KeyCore.PrintState` shows init order, tick order and disabled Controllers. Update CLAUDE.md 9.0 (classes) and the `UControllerSettings` doc comment. Build.
 7. Story E03-S05: two-player PIE (dedicated server + 2 clients, late join, widget placeholder), review against guidelines, todo-report, update this plan with the final state.
 
@@ -145,6 +145,14 @@ KeyCoreControllerOrderSolver.h(193,25): error C2338: static_assert failed: 'KeyC
 ```
 
 Observation: with both broken lists in one file, MSVC reported only the first. This does not matter in practice, because there is exactly one central list (O1). The class names appear in the "note" line right after the message, not in the error line itself (risk from the plan confirmed, acceptable).
+
+### Review fixes after steps 1 and 2 (approved by the user on 2026-11-26)
+No design change.
+- Type traits: only `std::` traits (`std::is_same_v`, `std::is_base_of_v`); `TIsDerivedFrom` is no longer used. The engine's Core module itself uses `std::is_base_of_v` and has no `TIsSame` any more.
+- `BuildOrder()` gets classes through `KeyCore::Private::GetControllerClass<T>()`, which returns null for types that are no Controller. A list with such a type now fails with the `NotAController` message only (checked with a temporary negative build, reverted), without a follow-up "StaticClass is not a member" error.
+- Test Controllers in `KeyCoreControllerOrderStaticTests.cpp` carry the `U` prefix, because they derive from `UObject` (Epic standard), although they have no `UCLASS`.
+- The order test helpers are one function `HasOrder<SolverType, Member>` with a member pointer to `InitOrder` or `TickOrder`; `HasInitOrder` / `HasTickOrder` only forward to it.
+- Step 5 additionally declares the function created by `KEYCORE_DEFINE_CONTROLLER_ORDER` in a game module header (needed by the GameState anyway; avoids a missing-prototype warning on Clang), and the macro comment says so.
 
 ## Verification
 | Criterion | Check |

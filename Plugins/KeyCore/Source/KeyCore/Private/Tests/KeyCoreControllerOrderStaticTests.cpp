@@ -7,75 +7,76 @@
  * a failing check stops the build. Broken graphs are checked through Solve(), which reports the problem without raising
  * the error templates, so these tests never break the build on purpose.
  * The test Controllers are plain C++ classes without UCLASS: they are only used as types and never constructed.
+ * They derive from UControllerBase, so they carry the U prefix of the Epic standard even without reflection.
  */
 
 namespace KeyCoreControllerOrderStaticTests
 {
-	class FControllerA : public UControllerBase
+	class UControllerA : public UControllerBase
 	{
 	};
 
-	class FControllerB : public UControllerBase
+	class UControllerB : public UControllerBase
 	{
 	public:
-		KEYCORE_CONTROLLER_ORDER(TDependsOn<FControllerA>)
+		KEYCORE_CONTROLLER_ORDER(TDependsOn<UControllerA>)
 	};
 
-	class FControllerC : public UControllerBase
+	class UControllerC : public UControllerBase
 	{
 	public:
-		KEYCORE_CONTROLLER_ORDER(TRunsAfter<FControllerB>)
+		KEYCORE_CONTROLLER_ORDER(TRunsAfter<UControllerB>)
 	};
 
-	class FTicksAfterC : public UControllerBase
+	class UTicksAfterC : public UControllerBase
 	{
 	public:
-		KEYCORE_CONTROLLER_ORDER(TTicksAfter<FControllerC>)
+		KEYCORE_CONTROLLER_ORDER(TTicksAfter<UControllerC>)
 	};
 
-	class FSelfRelated : public UControllerBase
+	class USelfRelated : public UControllerBase
 	{
 	public:
-		KEYCORE_CONTROLLER_ORDER(TRunsAfter<FSelfRelated>)
+		KEYCORE_CONTROLLER_ORDER(TRunsAfter<USelfRelated>)
 	};
 
-	class FCycleFirst;
+	class UCycleFirst;
 
-	class FCycleSecond : public UControllerBase
+	class UCycleSecond : public UControllerBase
 	{
 	public:
-		KEYCORE_CONTROLLER_ORDER(TRunsAfter<FCycleFirst>)
+		KEYCORE_CONTROLLER_ORDER(TRunsAfter<UCycleFirst>)
 	};
 
-	class FCycleFirst : public UControllerBase
+	class UCycleFirst : public UControllerBase
 	{
 	public:
-		KEYCORE_CONTROLLER_ORDER(TRunsAfter<FCycleSecond>)
+		KEYCORE_CONTROLLER_ORDER(TRunsAfter<UCycleSecond>)
 	};
 
 	/** Depends on the cycle without being part of it, so the solver must not report it. */
-	class FBehindCycle : public UControllerBase
+	class UBehindCycle : public UControllerBase
 	{
 	public:
-		KEYCORE_CONTROLLER_ORDER(TRunsAfter<FCycleFirst>)
+		KEYCORE_CONTROLLER_ORDER(TRunsAfter<UCycleFirst>)
 	};
 
-	class FTickCycleSecond;
+	class UTickCycleSecond;
 
-	class FTickCycleFirst : public UControllerBase
+	class UTickCycleFirst : public UControllerBase
 	{
 	public:
-		KEYCORE_CONTROLLER_ORDER(TTicksAfter<FTickCycleSecond>)
+		KEYCORE_CONTROLLER_ORDER(TTicksAfter<UTickCycleSecond>)
 	};
 
-	class FTickCycleSecond : public UControllerBase
+	class UTickCycleSecond : public UControllerBase
 	{
 	public:
-		KEYCORE_CONTROLLER_ORDER(TTicksAfter<FTickCycleFirst>)
+		KEYCORE_CONTROLLER_ORDER(TTicksAfter<UTickCycleFirst>)
 	};
 
 	/** Has no relations, so it only moves when others must go first. */
-	class FUnrelated : public UControllerBase
+	class UUnrelated : public UControllerBase
 	{
 	};
 
@@ -83,8 +84,9 @@ namespace KeyCoreControllerOrderStaticTests
 	{
 	};
 
-	template <typename SolverType, int32 ExpectedCount>
-	constexpr bool HasInitOrder(const int32 (&Expected)[ExpectedCount])
+	/** True if the list is valid and the order selected by Order matches Expected. Order picks InitOrder or TickOrder of the result. */
+	template <typename SolverType, int32 (SolverType::FResult::*Order)[SolverType::Capacity], int32 ExpectedCount>
+	constexpr bool HasOrder(const int32 (&Expected)[ExpectedCount])
 	{
 		constexpr typename SolverType::FResult Result = SolverType::Solve();
 		static_assert(ExpectedCount == SolverType::Count, "The expected order must list every Controller.");
@@ -94,7 +96,7 @@ namespace KeyCoreControllerOrderStaticTests
 		}
 		for (int32 Position = 0; Position < ExpectedCount; ++Position)
 		{
-			if (Result.InitOrder[Position] != Expected[Position])
+			if ((Result.*Order)[Position] != Expected[Position])
 			{
 				return false;
 			}
@@ -103,22 +105,15 @@ namespace KeyCoreControllerOrderStaticTests
 	}
 
 	template <typename SolverType, int32 ExpectedCount>
+	constexpr bool HasInitOrder(const int32 (&Expected)[ExpectedCount])
+	{
+		return HasOrder<SolverType, &SolverType::FResult::InitOrder>(Expected);
+	}
+
+	template <typename SolverType, int32 ExpectedCount>
 	constexpr bool HasTickOrder(const int32 (&Expected)[ExpectedCount])
 	{
-		constexpr typename SolverType::FResult Result = SolverType::Solve();
-		static_assert(ExpectedCount == SolverType::Count, "The expected order must list every Controller.");
-		if (Result.Problem.Kind != EControllerOrderProblem::None)
-		{
-			return false;
-		}
-		for (int32 Position = 0; Position < ExpectedCount; ++Position)
-		{
-			if (Result.TickOrder[Position] != Expected[Position])
-			{
-				return false;
-			}
-		}
-		return true;
+		return HasOrder<SolverType, &SolverType::FResult::TickOrder>(Expected);
 	}
 
 	template <typename SolverType>
@@ -130,25 +125,25 @@ namespace KeyCoreControllerOrderStaticTests
 
 	// Valid lists: init order.
 	static_assert(HasProblem<TControllerOrderSolver<>>(EControllerOrderProblem::None, INDEX_NONE, INDEX_NONE), "An empty list is valid.");
-	static_assert(HasInitOrder<TControllerOrderSolver<FControllerA, FControllerB>>({ 0, 1 }), "Without conflicts, the list order is kept.");
-	static_assert(HasInitOrder<TControllerOrderSolver<FControllerB, FControllerA>>({ 1, 0 }), "DependsOn moves the dependency before its dependent.");
-	static_assert(HasInitOrder<TControllerOrderSolver<FControllerC, FControllerA, FControllerB>>({ 1, 2, 0 }), "RunsAfter and DependsOn chain: A, B, C.");
-	static_assert(HasInitOrder<TControllerOrderSolver<FControllerB, FUnrelated, FControllerA>>({ 1, 2, 0 }), "The sort is stable: an unrelated Controller keeps its place before the moved ones.");
+	static_assert(HasInitOrder<TControllerOrderSolver<UControllerA, UControllerB>>({ 0, 1 }), "Without conflicts, the list order is kept.");
+	static_assert(HasInitOrder<TControllerOrderSolver<UControllerB, UControllerA>>({ 1, 0 }), "DependsOn moves the dependency before its dependent.");
+	static_assert(HasInitOrder<TControllerOrderSolver<UControllerC, UControllerA, UControllerB>>({ 1, 2, 0 }), "RunsAfter and DependsOn chain: A, B, C.");
+	static_assert(HasInitOrder<TControllerOrderSolver<UControllerB, UUnrelated, UControllerA>>({ 1, 2, 0 }), "The sort is stable: an unrelated Controller keeps its place before the moved ones.");
 
 	// Valid lists: tick order.
-	static_assert(HasTickOrder<TControllerOrderSolver<FControllerB, FControllerA>>({ 1, 0 }), "Without TicksAfter, the tick order is the init order.");
-	static_assert(HasTickOrder<TControllerOrderSolver<FTicksAfterC, FControllerA, FControllerB, FControllerC>>({ 1, 2, 3, 0 }), "TicksAfter moves the Controller behind its tick target.");
-	static_assert(HasInitOrder<TControllerOrderSolver<FTicksAfterC, FControllerA, FControllerB, FControllerC>>({ 0, 1, 2, 3 }), "TicksAfter does not change the init order.");
+	static_assert(HasTickOrder<TControllerOrderSolver<UControllerB, UControllerA>>({ 1, 0 }), "Without TicksAfter, the tick order is the init order.");
+	static_assert(HasTickOrder<TControllerOrderSolver<UTicksAfterC, UControllerA, UControllerB, UControllerC>>({ 1, 2, 3, 0 }), "TicksAfter moves the Controller behind its tick target.");
+	static_assert(HasInitOrder<TControllerOrderSolver<UTicksAfterC, UControllerA, UControllerB, UControllerC>>({ 0, 1, 2, 3 }), "TicksAfter does not change the init order.");
 
 	// Broken lists: each problem kind, with the reported Controller and relation.
-	static_assert(HasProblem<TControllerOrderSolver<FControllerA, FNotAController>>(EControllerOrderProblem::NotAController, 1, INDEX_NONE), "A type that is no Controller is reported.");
-	static_assert(HasProblem<TControllerOrderSolver<FControllerA, FControllerA>>(EControllerOrderProblem::ListedTwice, 1, INDEX_NONE), "The second entry of a duplicate is reported.");
-	static_assert(HasProblem<TControllerOrderSolver<FSelfRelated>>(EControllerOrderProblem::RelationToSelf, 0, 0), "A relation to itself is reported.");
-	static_assert(HasProblem<TControllerOrderSolver<FControllerB>>(EControllerOrderProblem::RelationToUnlisted, 0, 0), "A relation to an unlisted class is reported.");
-	static_assert(HasProblem<TControllerOrderSolver<FCycleFirst, FCycleSecond>>(EControllerOrderProblem::InitOrderCycle, 1, INDEX_NONE)
-		|| HasProblem<TControllerOrderSolver<FCycleFirst, FCycleSecond>>(EControllerOrderProblem::InitOrderCycle, 0, INDEX_NONE), "An init cycle is reported.");
-	static_assert(!HasProblem<TControllerOrderSolver<FBehindCycle, FCycleFirst, FCycleSecond>>(EControllerOrderProblem::InitOrderCycle, 0, INDEX_NONE)
-		&& TControllerOrderSolver<FBehindCycle, FCycleFirst, FCycleSecond>::Solve().Problem.Kind == EControllerOrderProblem::InitOrderCycle, "The reported class lies on the cycle, not behind it.");
-	static_assert(TControllerOrderSolver<FTickCycleFirst, FTickCycleSecond>::Solve().Problem.Kind == EControllerOrderProblem::TickOrderCycle, "A tick cycle is reported.");
-	static_assert(HasProblem<TControllerOrderSolver<FNotAController, FControllerA, FControllerA>>(EControllerOrderProblem::NotAController, 0, INDEX_NONE), "List problems are reported before relation problems.");
+	static_assert(HasProblem<TControllerOrderSolver<UControllerA, FNotAController>>(EControllerOrderProblem::NotAController, 1, INDEX_NONE), "A type that is no Controller is reported.");
+	static_assert(HasProblem<TControllerOrderSolver<UControllerA, UControllerA>>(EControllerOrderProblem::ListedTwice, 1, INDEX_NONE), "The second entry of a duplicate is reported.");
+	static_assert(HasProblem<TControllerOrderSolver<USelfRelated>>(EControllerOrderProblem::RelationToSelf, 0, 0), "A relation to itself is reported.");
+	static_assert(HasProblem<TControllerOrderSolver<UControllerB>>(EControllerOrderProblem::RelationToUnlisted, 0, 0), "A relation to an unlisted class is reported.");
+	static_assert(HasProblem<TControllerOrderSolver<UCycleFirst, UCycleSecond>>(EControllerOrderProblem::InitOrderCycle, 1, INDEX_NONE)
+		|| HasProblem<TControllerOrderSolver<UCycleFirst, UCycleSecond>>(EControllerOrderProblem::InitOrderCycle, 0, INDEX_NONE), "An init cycle is reported.");
+	static_assert(!HasProblem<TControllerOrderSolver<UBehindCycle, UCycleFirst, UCycleSecond>>(EControllerOrderProblem::InitOrderCycle, 0, INDEX_NONE)
+		&& TControllerOrderSolver<UBehindCycle, UCycleFirst, UCycleSecond>::Solve().Problem.Kind == EControllerOrderProblem::InitOrderCycle, "The reported class lies on the cycle, not behind it.");
+	static_assert(TControllerOrderSolver<UTickCycleFirst, UTickCycleSecond>::Solve().Problem.Kind == EControllerOrderProblem::TickOrderCycle, "A tick cycle is reported.");
+	static_assert(HasProblem<TControllerOrderSolver<FNotAController, UControllerA, UControllerA>>(EControllerOrderProblem::NotAController, 0, INDEX_NONE), "List problems are reported before relation problems.");
 }
